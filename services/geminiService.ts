@@ -9,8 +9,8 @@ import { ScenarioType, SimulationState, ActionEstimate, Language, LogEntry } fro
 const apiKey = process.env.API_KEY || "MISSING_KEY";
 const ai = new GoogleGenAI({ apiKey: apiKey });
 
-// Using gemini-2.5-flash as it is the standard stable model with better availability than preview-lite models
-const MODEL_NAME = 'gemini-2.5-flash';
+// Updated to use gemini-2.5-flash-lite as requested
+const MODEL_NAME = 'gemini-2.5-flash-lite';
 
 // --- CACHING SYSTEM ---
 // Stores API responses to prevent redundant calls (Quota Saver)

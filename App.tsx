@@ -622,14 +622,14 @@ const App: React.FC = () => {
 
   // 3. GAMEPLAY SCREEN
   return (
-    <div className="h-screen w-screen overflow-hidden bg-black relative font-sans text-gray-100" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen w-full bg-black relative font-sans text-gray-100" dir={isRTL ? 'rtl' : 'ltr'}>
       
       {/* Loading Overlay */}
       {loading && <LoadingOverlay text={loadingText} />}
 
       {/* Error Modal */}
       {errorMsg && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in fixed">
            <div className="bg-gray-900 border border-red-500/50 rounded-2xl p-6 max-w-md w-full shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-red-500"></div>
               <h3 className="text-red-400 font-bold text-lg mb-2 flex items-center gap-2">
@@ -663,7 +663,7 @@ const App: React.FC = () => {
                     t={t} 
                 />
             ) : (
-                <div className="absolute top-20 right-4 z-40 animate-fade-in">
+                <div className="absolute top-20 right-4 z-40 animate-fade-in fixed">
                     <button 
                         onClick={() => setIsReviewing(false)}
                         className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full font-bold shadow-lg border-2 border-indigo-400/50 flex items-center gap-2"
@@ -676,7 +676,7 @@ const App: React.FC = () => {
       )}
 
       {/* --- BACKGROUND LAYER --- */}
-      <div className="absolute inset-0 z-0 select-none">
+      <div className="fixed inset-0 z-0 select-none">
          {gameState?.imagePrompt && (
             <img 
               key={turnCount}
@@ -692,13 +692,13 @@ const App: React.FC = () => {
       </div>
 
       {/* --- MAIN CONTENT CONTAINER --- */}
-      <div className="relative z-10 h-full w-full flex flex-col md:flex-row p-2 md:p-6 gap-4">
+      <div className="relative z-10 flex flex-col lg:flex-row p-4 gap-6 min-h-screen">
         
         {/* LEFT/CENTER: NARRATIVE & CONTROLS */}
-        <div className="flex-1 flex flex-col h-full gap-4 max-w-5xl mx-auto w-full">
+        <div className="flex-1 flex flex-col gap-4 w-full max-w-5xl mx-auto">
             
             {/* Header Status Bar */}
-            <div className="shrink-0 flex items-center justify-between bg-black/40 backdrop-blur-md border border-white/10 p-3 rounded-full px-6">
+            <div className="shrink-0 flex items-center justify-between bg-black/40 backdrop-blur-md border border-white/10 p-3 rounded-full px-6 sticky top-2 z-20">
                 <div className="flex items-center gap-3">
                     <button onClick={handleSaveAndExit} className="mr-2 text-xs bg-gray-800 hover:bg-red-900/50 text-gray-300 px-3 py-1 rounded-full border border-gray-700 transition-colors">
                         💾 {t.saveAndExit}
@@ -716,7 +716,7 @@ const App: React.FC = () => {
             </div>
 
             {/* Narrative Card */}
-            <div className="flex-1 bg-gray-950/70 backdrop-blur-xl border border-white/10 rounded-2xl p-6 md:p-10 shadow-2xl overflow-y-auto scroll-smooth relative group">
+            <div className="flex-1 bg-gray-950/70 backdrop-blur-xl border border-white/10 rounded-2xl p-6 md:p-10 shadow-2xl relative group h-[50vh] lg:h-auto overflow-y-auto">
                 {/* Feedback Toast */}
                 {gameState?.feedback && (
                   <div className="mb-6 p-4 bg-blue-500/10 border-l-2 border-blue-500 rounded-r-lg">
@@ -784,7 +784,8 @@ const App: React.FC = () => {
         </div>
 
         {/* RIGHT: DASHBOARD (HUD) */}
-        <div className="hidden lg:flex w-80 flex-col gap-4">
+        {/* Changed from hidden lg:flex to flex (visible on mobile too) */}
+        <div className="w-full lg:w-80 flex flex-col gap-4">
              {/* Objective Card */}
              <div className="bg-indigo-950/80 backdrop-blur-xl p-5 rounded-2xl border border-indigo-500/30 shadow-lg">
                 <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2">{t.goalLabel}</div>
@@ -805,8 +806,8 @@ const App: React.FC = () => {
                     </>
                  )}
                  
-                 {/* Mini Log - Updated to full scrollable log */}
-                 <div className="mt-auto pt-4 border-t border-white/5 flex flex-col min-h-[150px] flex-1">
+                 {/* Mini Log */}
+                 <div className="mt-auto pt-4 border-t border-white/5 flex flex-col min-h-[150px] flex-1 max-h-60 lg:max-h-none">
                     <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 flex-shrink-0">{t.logTitle}</div>
                     <div className="overflow-y-auto space-y-2 pr-1 custom-scrollbar flex-1">
                         {logs.map((log, i) => (
@@ -824,7 +825,7 @@ const App: React.FC = () => {
 
       {/* MODAL: CUSTOM ACTION */}
       {showCustomModal && (
-        <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
+        <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in fixed">
           <div className="bg-gray-900 w-full max-w-lg rounded-2xl border border-gray-700 shadow-2xl overflow-hidden flex flex-col">
             <div className="p-4 border-b border-gray-800 flex justify-between items-center">
                <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t.customActionTitle}</h3>
