@@ -30,12 +30,27 @@ const extractAndParseJSON = (text: string) => {
 
 // --- MAIN FUNCTIONS ---
 
-export const startNewGame = async (type: ScenarioType, difficulty: string, lang: Language): Promise<SimulationState> => {
+export const startNewGame = async (
+  type: ScenarioType, 
+  difficulty: string, 
+  lang: Language, 
+  pdfData?: { base64: string, mimeType: string }
+): Promise<SimulationState> => {
   const langName = lang === Language.AR ? 'Arabic' : 'English';
   
+  let difficultyDesc = "";
+  switch(difficulty) {
+      case 'EASY': difficultyDesc = "Level: Easy (Beginner). forgiving constraints, clear options, low risk."; break;
+      case 'MEDIUM': difficultyDesc = "Level: Medium (Intermediate). balanced trade-offs, moderate time pressure."; break;
+      case 'HARD': difficultyDesc = "Level: Hard (Expert). complex dilemma, severe time/resource pressure, high ambiguity and risk."; break;
+      default: difficultyDesc = `Level: ${difficulty}`;
+  }
+
   const systemPrompt = `
     You are an advanced simulation engine.
-    Task: Create a unique, detailed ${difficulty} scenario for ${type} in ${langName}.
+    Task: Create a unique, detailed scenario for ${type} in ${langName}.
+    ${difficultyDesc}
+    ${pdfData ? "CRITICAL: Base the scenario SPECIFICALLY on the provided PDF document. Extract the core problem, context, and technical details from it." : ""}
     
     CRITICAL INSTRUCTIONS:
     1. Return ONLY valid JSON format.
@@ -60,9 +75,24 @@ export const startNewGame = async (type: ScenarioType, difficulty: string, lang:
   `;
 
   try {
+    const contents: any = { parts: [] };
+    
+    // Add PDF if provided
+    if (pdfData) {
+        contents.parts.push({
+            inlineData: {
+                mimeType: pdfData.mimeType,
+                data: pdfData.base64
+            }
+        });
+    }
+
+    // Add Text Prompt
+    contents.parts.push({ text: systemPrompt });
+
     const response = await ai.models.generateContent({
       model: MODEL_NAME,
-      contents: systemPrompt,
+      contents: contents,
       config: {
         responseMimeType: "application/json",
         temperature: 0.7,

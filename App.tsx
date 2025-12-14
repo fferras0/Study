@@ -24,9 +24,9 @@ const TRANSLATIONS = {
     domainCybersecurity: "الأمن السيبراني (Cybersecurity)",
     domainLegal: "المحاماة والقضاء (Legal)",
     difficultyLabel: "مستوى التعقيد",
-    diffEasy: "تدريب (مبتدئ)",
-    diffMedium: "ميداني (ممارس)",
-    diffHard: "أزمة حرجة (خبير)",
+    diffEasy: "سهل",
+    diffMedium: "متوسط",
+    diffHard: "صعب",
     loadingSetup: "انشاء سيناريو...",
     loadingTranslate: "جاري ترجمة سياق المحاكاة والسجلات...",
     startSimBtn: "إطلاق بيئة المحاكاة",
@@ -66,6 +66,11 @@ const TRANSLATIONS = {
     readAloud: "قراءة صوتية",
     stopReading: "إيقاف",
     saveAndExit: "حفظ وخروج",
+    uploadLabel: "رفع ملف مرجعي (PDF)",
+    uploadDesc: "اختياري: يمكنك رفع ملف يحتوي على تفاصيل القضية أو الحالة لتوليد سيناريو مبني عليه.",
+    fileSelected: "تم اختيار الملف:",
+    removeFile: "إزالة",
+    browse: "استعراض ملفات",
   },
   [Language.EN]: {
     appTitle: "SimuLearn",
@@ -83,9 +88,9 @@ const TRANSLATIONS = {
     domainCybersecurity: "Cybersecurity & Networks",
     domainLegal: "Law & Judiciary",
     difficultyLabel: "Complexity Level",
-    diffEasy: "Training (Easy)",
-    diffMedium: "Field (Medium)",
-    diffHard: "Crisis (Hard)",
+    diffEasy: "Easy",
+    diffMedium: "Medium",
+    diffHard: "Hard",
     loadingSetup: "Creating scenario...",
     loadingTranslate: "Translating scenario and logs...",
     startSimBtn: "Initialize Simulation",
@@ -125,6 +130,11 @@ const TRANSLATIONS = {
     readAloud: "Read",
     stopReading: "Stop",
     saveAndExit: "Save & Exit",
+    uploadLabel: "Upload Reference (PDF)",
+    uploadDesc: "Optional: Upload a case file or technical manual to generate a scenario based on it.",
+    fileSelected: "File Selected:",
+    removeFile: "Remove",
+    browse: "Browse Files",
   }
 };
 
@@ -141,6 +151,9 @@ const App: React.FC = () => {
   const [turnCount, setTurnCount] = useState<number>(0);
   const [hasSave, setHasSave] = useState(false);
   
+  // File Upload State
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   // Game State
   const [gameState, setGameState] = useState<SimulationState | null>(null);
 
@@ -159,6 +172,7 @@ const App: React.FC = () => {
 
   // Refs for auto-scrolling
   const logEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const t = TRANSLATIONS[lang];
   const isRTL = lang === Language.AR;
@@ -302,6 +316,31 @@ const App: React.FC = () => {
     setLoadingText("");
   };
 
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove the Data URL prefix (e.g., "data:application/pdf;base64,")
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.type === 'application/pdf') {
+        setSelectedFile(file);
+      } else {
+        alert(lang === Language.AR ? "يرجى اختيار ملف PDF فقط" : "Please select a PDF file");
+      }
+    }
+  };
+
   const handleResumeGame = async () => {
     const savedData = localStorage.getItem(STORAGE_KEY);
     if (savedData) {
@@ -362,14 +401,28 @@ const App: React.FC = () => {
     setLogs([]);
     setTurnCount(1);
     try {
-      const initialState = await GeminiService.startNewGame(config.type, config.difficulty, lang);
+      let pdfData = undefined;
+      
+      if (selectedFile) {
+        const base64 = await fileToBase64(selectedFile);
+        pdfData = {
+          base64: base64,
+          mimeType: selectedFile.type
+        };
+      }
+
+      const initialState = await GeminiService.startNewGame(config.type, config.difficulty, lang, pdfData);
       setGameState(initialState);
       setStatus(GameStatus.PLAYING);
       
+      const fileMsg = selectedFile 
+        ? (lang === Language.AR ? ` (بناءً على ملف: ${selectedFile.name})` : ` (Based on file: ${selectedFile.name})`) 
+        : "";
+
       setLogs([{
         turn: 1,
         actionTaken: lang === Language.AR ? "بدء تشغيل النظام" : "System Initialization",
-        feedback: lang === Language.AR ? "تم تحميل بيانات المحاكاة وتوليد السيناريو." : "Simulation data loaded.",
+        feedback: (lang === Language.AR ? "تم تحميل بيانات المحاكاة وتوليد السيناريو." : "Simulation data loaded.") + fileMsg,
         timestamp: new Date().toLocaleTimeString(isRTL ? 'ar-SA' : 'en-US')
       }]);
     } catch (error: any) {
@@ -639,6 +692,50 @@ const App: React.FC = () => {
                 ))}
               </div>
             </div>
+
+            {/* File Upload Section */}
+             <div>
+               <label className="block text-gray-400 mb-3 text-sm font-bold uppercase tracking-wider">{t.uploadLabel}</label>
+               <div className="bg-gray-800/50 border border-dashed border-gray-600 rounded-xl p-4 transition-all hover:border-blue-500 group">
+                 <input 
+                   type="file" 
+                   accept="application/pdf" 
+                   ref={fileInputRef}
+                   onChange={handleFileChange}
+                   className="hidden"
+                 />
+                 {!selectedFile ? (
+                    <div 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex flex-col items-center justify-center cursor-pointer py-4"
+                    >
+                      <span className="text-3xl mb-2 text-gray-600 group-hover:text-blue-400 transition-colors">📄</span>
+                      <span className="text-sm font-bold text-gray-300 group-hover:text-white">{t.browse}</span>
+                      <span className="text-xs text-gray-500 mt-1 text-center max-w-xs">{t.uploadDesc}</span>
+                    </div>
+                 ) : (
+                    <div className="flex items-center justify-between p-2">
+                       <div className="flex items-center gap-3">
+                          <span className="text-2xl text-red-400">📄</span>
+                          <div className="flex flex-col">
+                             <span className="text-xs text-gray-400">{t.fileSelected}</span>
+                             <span className="text-sm font-bold text-white truncate max-w-[200px]">{selectedFile.name}</span>
+                          </div>
+                       </div>
+                       <button 
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           setSelectedFile(null);
+                           if (fileInputRef.current) fileInputRef.current.value = '';
+                         }}
+                         className="text-gray-500 hover:text-red-400 p-2"
+                       >
+                         {t.removeFile} ✕
+                       </button>
+                    </div>
+                 )}
+               </div>
+             </div>
 
             <div className="pt-4 space-y-3">
               <button onClick={handleStartGame} disabled={loading} className="w-full py-4 bg-white hover:bg-gray-100 text-gray-900 font-bold text-lg rounded-xl shadow-lg transition-all transform active:scale-[0.99] flex justify-center items-center gap-3">
