@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { ScenarioType, GameStatus, SimulationState, SetupConfig, LogEntry, ActionEstimate, Language } from './types';
 import * as GeminiService from './services/geminiService';
@@ -235,9 +234,36 @@ const App: React.FC = () => {
       window.speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(text);
-      // Attempt to set a voice appropriate for the language
-      utterance.lang = lang === Language.AR ? 'ar-SA' : 'en-US';
-      utterance.rate = 0.9; // Slightly slower for clarity
+      
+      // Load voices (some browsers require async loading)
+      let voices = window.speechSynthesis.getVoices();
+      
+      if (lang === Language.AR) {
+          utterance.lang = 'ar-SA';
+          // Priority List for "Young Male" / Clear Voices:
+          // 1. Maged (Apple - Excellent Male)
+          // 2. Naayf (Windows - Standard Male)
+          // 3. Google (Android/Chrome - Usually very clear)
+          const preferredVoice = voices.find(v => 
+             v.lang.includes('ar') && (
+                 v.name.includes('Maged') || 
+                 v.name.includes('Naayf') ||
+                 v.name.includes('Male') ||
+                 v.name.includes('Google')
+             )
+          ) || voices.find(v => v.lang.includes('ar')); // Fallback
+          
+          if (preferredVoice) {
+              utterance.voice = preferredVoice;
+              // Slightly faster rate for a "young" feel (0.9 can sound drugged on some systems)
+              utterance.rate = 1.0; 
+              // Standard pitch
+              utterance.pitch = 1.0;
+          }
+      } else {
+          utterance.lang = 'en-US';
+          utterance.rate = 1.0;
+      }
       
       utterance.onend = () => setIsSpeaking(false);
       utterance.onerror = () => setIsSpeaking(false);
@@ -252,7 +278,18 @@ const App: React.FC = () => {
   const handleError = (error: any) => {
     console.error(error);
     const defaultMsg = lang === Language.AR ? "حدث خطأ في الاتصال بالخادم" : "Server Connection Error";
-    let msg = error?.message || defaultMsg;
+    let msg = "";
+    
+    // Safely extract message
+    if (typeof error === 'string') {
+        msg = error;
+    } else if (error?.message) {
+        msg = error.message;
+    } else {
+        msg = defaultMsg;
+    }
+
+    if (typeof msg !== 'string') msg = defaultMsg;
     
     // If it's the specific "API Key expired" message, make sure it's shown clearly
     if (msg.includes("API key expired")) {
@@ -726,7 +763,7 @@ const App: React.FC = () => {
                 )}
 
                 {/* Main Text */}
-                <div className="prose prose-invert prose-lg max-w-none">
+                <div className="prose prose-invert prose-lg max-w-none font-medium leading-loose text-gray-100">
                     {loading && !gameState ? (
                         <div className="flex flex-col gap-3 animate-pulse">
                             <div className="h-4 bg-gray-700 rounded w-3/4"></div>
@@ -766,15 +803,17 @@ const App: React.FC = () => {
                            <button
                              key={option.id}
                              disabled={loading}
-                             onClick={() => executeAction(option.label)}
+                             onClick={() => executeAction(option.label || (option as any).text || (option as any).action || "خيار متاح")}
                              className="group relative flex flex-col items-start p-4 bg-gray-900/80 hover:bg-gray-800 backdrop-blur-md border border-white/5 hover:border-blue-500/50 rounded-xl transition-all text-start"
                            >
-                             <span className="font-semibold text-gray-200 group-hover:text-white transition-colors text-sm">{option.label}</span>
+                             <span className="font-semibold text-gray-200 group-hover:text-white transition-colors text-sm text-start">
+                               {option.label || (option as any).text || (option as any).action || "خيار متاح (بدون عنوان)"}
+                             </span>
                              <div className="flex gap-3 mt-2 text-[10px] font-mono text-gray-500 uppercase">
                                 <span>⌛ {option.timeCost}m</span>
                                 {/* Budget display removed from card */}
                                 {/* <span className="text-emerald-300">{formatMoney(option.cost)}</span> */}
-                                <span className={`${option.risk.includes('High') || option.risk.includes('عالية') ? 'text-red-400' : 'text-green-400'}`}>⚠️ {option.risk}</span>
+                                <span className={`${(option.risk || "").includes('High') || (option.risk || "").includes('عالية') ? 'text-red-400' : 'text-green-400'}`}>⚠️ {option.risk || "Normal"}</span>
                              </div>
                            </button>
                         ))}
@@ -871,7 +910,7 @@ const App: React.FC = () => {
                          </div> */}
                          <div className="text-center">
                             <div className="text-[10px] text-gray-500">{t.riskLabel}</div>
-                            <div className={`font-bold text-xs ${estimation.estimatedRisk.includes('High') || estimation.estimatedRisk.includes('عالية') ? 'text-red-500' : 'text-green-500'}`}>{estimation.estimatedRisk}</div>
+                            <div className={`font-bold text-xs ${(estimation.estimatedRisk || "").includes('High') || (estimation.estimatedRisk || "").includes('عالية') ? 'text-red-500' : 'text-green-500'}`}>{estimation.estimatedRisk}</div>
                          </div>
                       </div>
                       
