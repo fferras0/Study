@@ -3,8 +3,11 @@ import { ScenarioType, SimulationState, ActionEstimate, Language, LogEntry } fro
 
 // --- API KEY MANAGEMENT ---
 
-// Initialize the client with the environment variable directly.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Initialize the client safely.
+// We provide a fallback string to prevent "new GoogleGenAI" from throwing immediately on import
+// if the env var is missing. The error will be caught later during API calls.
+const apiKey = process.env.API_KEY || "MISSING_KEY";
+const ai = new GoogleGenAI({ apiKey: apiKey });
 
 // Using gemini-2.5-flash as it is the standard stable model with better availability than preview-lite models
 const MODEL_NAME = 'gemini-2.5-flash';
@@ -39,6 +42,11 @@ async function callWithRetry<T>(
   retries = MAX_RETRIES, 
   initialDelay = 1000
 ): Promise<T> {
+  // Check for missing key before attempting call
+  if (apiKey === "MISSING_KEY" || !apiKey) {
+      throw new Error("API Key is missing. Please configure GEMINI_API_KEY in your Netlify settings.");
+  }
+
   try {
     return await fn();
   } catch (error: any) {
