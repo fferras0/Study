@@ -182,7 +182,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (logEndRef.current) {
-      logEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      logEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
   }, [logs]);
 
@@ -805,16 +805,17 @@ const App: React.FC = () => {
                     </>
                  )}
                  
-                 {/* Mini Log */}
-                 <div className="mt-auto pt-4 border-t border-white/5">
-                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">{t.logTitle}</div>
-                    <div className="h-32 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-                        {logs.slice(-3).reverse().map((log, i) => (
+                 {/* Mini Log - Updated to full scrollable log */}
+                 <div className="mt-auto pt-4 border-t border-white/5 flex flex-col min-h-[150px] flex-1">
+                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 flex-shrink-0">{t.logTitle}</div>
+                    <div className="overflow-y-auto space-y-2 pr-1 custom-scrollbar flex-1">
+                        {logs.map((log, i) => (
                             <div key={i} className="text-xs text-gray-400 border-l border-gray-700 pl-2">
-                                <span className="text-gray-500 text-[10px]">{log.timestamp}</span>
-                                <div className="text-gray-300 truncate">{log.actionTaken}</div>
+                                <span className="text-gray-500 text-[10px] block mb-1">{log.timestamp}</span>
+                                <div className="text-gray-300 leading-snug">{log.actionTaken}</div>
                             </div>
                         ))}
+                        <div ref={logEndRef} />
                     </div>
                  </div>
              </div>
