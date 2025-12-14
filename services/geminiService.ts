@@ -12,6 +12,14 @@ const ai = new GoogleGenAI({ apiKey: apiKey });
 // Updated to use gemini-2.5-flash-lite as requested
 const MODEL_NAME = 'gemini-2.5-flash-lite';
 
+// --- HELPER FUNCTIONS ---
+
+const cleanJson = (text: string) => {
+  if (!text) return "{}";
+  // Removes markdown code blocks (```json ... ```) if present
+  return text.replace(/```json\s*|```/g, '').trim();
+};
+
 // --- CACHING SYSTEM ---
 // Stores API responses to prevent redundant calls (Quota Saver)
 const requestCache = new Map<string, { data: any, timestamp: number }>();
@@ -229,7 +237,7 @@ export const translateLogs = async (logs: LogEntry[], targetLang: Language): Pro
         temperature: 0.2,
       },
     }));
-    const result = JSON.parse(response.text || "[]");
+    const result = JSON.parse(cleanJson(response.text || "[]"));
     setCache(cacheKey, result);
     return result;
   } catch (error) {
@@ -264,7 +272,7 @@ export const translateGameState = async (state: SimulationState, targetLang: Lan
       },
     }));
 
-    const data = JSON.parse(response.text || "{}");
+    const data = JSON.parse(cleanJson(response.text || "{}"));
     const result = {
       ...data,
       health: state.health,
@@ -346,7 +354,7 @@ export const startNewGame = async (type: ScenarioType, difficulty: string, lang:
       },
     }));
 
-    const data = JSON.parse(response.text || "{}");
+    const data = JSON.parse(cleanJson(response.text || "{}"));
     
     const newState = {
       description: data.description,
@@ -405,7 +413,7 @@ export const evaluateCustomAction = async (
         temperature: 0.3,
       },
     }));
-    const result = JSON.parse(response.text || "{}");
+    const result = JSON.parse(cleanJson(response.text || "{}"));
     setCache(cacheKey, result);
     return result;
   } catch (error) {
@@ -454,7 +462,7 @@ export const processTurn = async (
       },
     }));
 
-    const data = JSON.parse(response.text || "{}");
+    const data = JSON.parse(cleanJson(response.text || "{}"));
     return {
       description: data.description,
       goal: data.goal || currentState.goal,
