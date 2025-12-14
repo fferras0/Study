@@ -1,8 +1,9 @@
-
 import { GoogleGenAI, Type, Schema, GenerateContentResponse } from "@google/genai";
 import { ScenarioType, SimulationState, ActionEstimate, Language, LogEntry } from '../types';
 
-// Initialize the client with the environment variable API key.
+// --- API KEY MANAGEMENT ---
+
+// Initialize the client with the environment variable directly.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // Using gemini-2.5-flash as it is the standard stable model with better availability than preview-lite models
@@ -31,10 +32,12 @@ const setCache = (key: string, data: any) => {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const MAX_RETRIES = 5;
+
 async function callWithRetry<T>(
   fn: () => Promise<T>,
-  retries = 3,
-  initialDelay = 2000
+  retries = MAX_RETRIES, 
+  initialDelay = 1000
 ): Promise<T> {
   try {
     return await fn();
@@ -42,28 +45,31 @@ async function callWithRetry<T>(
     let errorMessage = "Unknown API Error";
 
     // Robust error message extraction to handle various SDK/API error formats
-    if (error?.error?.message) {
+    if (error instanceof Error) {
+        errorMessage = error.message;
+        if ((error as any).error?.message) {
+            errorMessage = (error as any).error.message;
+        }
+    } else if (error?.error?.message) {
         errorMessage = error.error.message;
     } else if (error?.message) {
         errorMessage = error.message;
     } else {
-        errorMessage = JSON.stringify(error);
+        try {
+            errorMessage = JSON.stringify(error);
+        } catch {
+            errorMessage = "Non-serializable Error";
+        }
     }
     
-    // Check for fatal auth/client errors - DO NOT RETRY
-    const isFatal = 
+    // Identify error types
+    const isAuthError = 
         errorMessage.includes('API key') || 
-        errorMessage.includes('API_KEY') ||
-        errorMessage.includes('expired') ||
-        errorMessage.includes('INVALID_ARGUMENT') || // 400
-        errorMessage.includes('PERMISSION_DENIED'); // 403
+        errorMessage.includes('expired') || 
+        errorMessage.includes('INVALID_ARGUMENT') ||
+        errorMessage.includes('PERMISSION_DENIED');
 
-    if (isFatal) {
-        console.error("Fatal API Error:", errorMessage);
-        throw new Error(errorMessage);
-    }
-
-    const isRateLimit = 
+    const isQuotaError = 
       error?.status === 429 || 
       error?.code === 429 || 
       errorMessage.includes('429') || 
@@ -72,32 +78,27 @@ async function callWithRetry<T>(
     
     const isServerOverload = error?.status === 503 || error?.code === 503 || errorMessage.includes('503');
     
-    if ((isRateLimit || isServerOverload) && retries > 0) {
-      let waitTime = initialDelay;
-
-      // Extract "retry in X s"
-      const retryMatch = errorMessage.match(/retry in ([\d\.]+)s/);
-      if (retryMatch && retryMatch[1]) {
-        waitTime = Math.ceil(parseFloat(retryMatch[1]) * 1000) + 1000;
-      } else if (error?.details) {
-         const detailsArr = Array.isArray(error.details) ? error.details : [error.details];
-         const retryDetail = detailsArr.find((d: any) => d?.retryDelay);
-         if (retryDetail?.retryDelay) {
-             const seconds = parseFloat(retryDetail.retryDelay.replace('s', ''));
-             if (!isNaN(seconds)) waitTime = Math.ceil(seconds * 1000) + 1000;
-         }
-      }
-
-      console.warn(`API Request failed (${error?.status || 'Rate Limit'}). Retrying in ${waitTime}ms... (Attempts left: ${retries})`);
-      await sleep(waitTime);
-      const nextDelay = retryMatch ? initialDelay * 2 : waitTime * 1.5; 
-      return callWithRetry(fn, retries - 1, nextDelay);
+    // RETRY STRATEGY
+    if (retries > 0) {
+        if (isQuotaError || isServerOverload) {
+             let waitTime = initialDelay;
+             const retryMatch = errorMessage.match(/retry in ([\d\.]+)s/);
+             if (retryMatch && retryMatch[1]) {
+                waitTime = Math.ceil(parseFloat(retryMatch[1]) * 1000) + 1000;
+             } else {
+                // Exponential backoff
+                waitTime = initialDelay * 1.5;
+             }
+             console.warn(`API Error (${errorMessage}). Retrying in ${waitTime}ms...`);
+             await sleep(waitTime);
+             return callWithRetry(fn, retries - 1, waitTime);
+        }
     }
     
-    if (errorMessage.includes('quota')) {
-        console.error("Critical Quota Error:", errorMessage);
+    if (isAuthError) {
+        console.error("Critical: Authentication failed. Please check process.env.API_KEY.");
     }
-    // Re-throw the refined error message
+    
     throw new Error(errorMessage);
   }
 }
@@ -312,6 +313,7 @@ export const startNewGame = async (type: ScenarioType, difficulty: string, lang:
        - PROGRAMMING: Source code/Debugging. Include code snippet.
        - CYBERSECURITY: Network logs/Defense. Include terminal logs.
        - ENGINEERING: Mechanical integrity.
+       - LEGAL: Courtroom arguments, Evidence analysis, Case strength (Health=Case Credibility).
     3. Tone: Academic ${langName}.
     4. Realism: ${contextPrompt}
     5. Diff: ${complexityPrompt}
@@ -430,6 +432,7 @@ export const processTurn = async (
     
     Lang: ${langName} (except imagePrompt).
     For Coding/Cyber: Include updated logs/code if relevant.
+    For LEGAL: Focus on judge's ruling, objection sustainability, and jury impact.
   `;
 
   try {

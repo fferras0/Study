@@ -13,7 +13,7 @@ const TRANSLATIONS = {
     appTitle: "SimuLearn",
     appSubtitle: "",
     selectLang: "اختر لغة الواجهة",
-    introDesc: "بيئة محاكاة ذكية (SimuLearn) لتوليد سيناريوهات طبية، هندسية، وبرمجية معقدة. تعتمد على الذكاء الاصطناعي لاختبار مهارات حل المشكلات.",
+    introDesc: "بيئة محاكاة ذكية (SimuLearn) لتوليد سيناريوهات طبية، هندسية، قانونية، وبرمجية معقدة. تعتمد على الذكاء الاصطناعي لاختبار مهارات حل المشكلات.",
     startBtn: "بـدء محـاكاة جديـدة",
     resumeBtn: "📂 استكمال الجلسة السابقة",
     setupTitle: "تكوين سيناريو المحاكاة",
@@ -23,6 +23,7 @@ const TRANSLATIONS = {
     domainEngineering: "الهندسة الصناعية والميكانيكية",
     domainProgramming: "تخصص أكواد البرمجة (Coding)",
     domainCybersecurity: "الأمن السيبراني (Cybersecurity)",
+    domainLegal: "المحاماة والقضاء (Legal)",
     difficultyLabel: "مستوى التعقيد",
     diffEasy: "تدريب (مبتدئ)",
     diffMedium: "ميداني (ممارس)",
@@ -35,6 +36,7 @@ const TRANSLATIONS = {
     workshop: "موقع العمليات الميدانية",
     serverRoom: "بيئة التطوير / Terminal",
     securityRoom: "غرفة العمليات السيبرانية (SOC)",
+    courtRoom: "قاعة المحكمة / مكتب التحقيق",
     prevResult: "تقرير نتائج الإجراء السابق",
     missionSuccess: "تم تحقيق أهداف المهمة بنجاح",
     missionFail: "فشل المهمة: خروج الوضع عن السيطرة",
@@ -45,8 +47,8 @@ const TRANSLATIONS = {
     actionsLabel: "خيارات التدخل المتاحة",
     customActionBtn: "اقترح حلاً إبداعياً",
     customActionTitle: "وضع الحلول الإبداعية (Creativity Mode)",
-    customActionDesc: "هنا يمكنك اقتراح إجراء غير موجود في القائمة. سيقوم النظام بتحليل جدوى الإجراء ومخاطره فيزيائياً وطبياً قبل التنفيذ.",
-    customActionPlaceholder: "مثال: سأقوم بعمل شق حنجري عاجل باستخدام أدوات بديلة لتأمين المجرى الهوائي...",
+    customActionDesc: "هنا يمكنك اقتراح إجراء غير موجود في القائمة. سيقوم النظام بتحليل جدوى الإجراء ومخاطره قانونياً أو تقنياً قبل التنفيذ.",
+    customActionPlaceholder: "مثال: سأقوم بتقديم اعتراض على الأدلة المقدمة استناداً للمادة...",
     analyzeBtn: "محاكاة التبعات (Risk Analysis)",
     analysisTitle: "تحليل التبعات المتوقعة",
     timeLabel: "النافذة الزمنية",
@@ -57,7 +59,7 @@ const TRANSLATIONS = {
     confirmBtn: "اعتماد وتنفيذ",
     dashboardTitle: "المؤشرات الحيوية ولوحة القيادة",
     goalLabel: "الهدف الاستراتيجي للمهمة",
-    statusLabel: "استقرار الحالة / النظام",
+    statusLabel: "استقرار الحالة / الموقف القانوني",
     budgetLabel: "الموارد المالية",
     logTitle: "سجل القرارات والأحداث",
     noLogs: "بانتظار الإجراء الأول...",
@@ -70,7 +72,7 @@ const TRANSLATIONS = {
     appTitle: "SimuLearn",
     appSubtitle: "",
     selectLang: "Select Simulation Language",
-    introDesc: "An advanced AI-driven environment (SimuLearn) for generating realistic medical, engineering, and software scenarios.",
+    introDesc: "An advanced AI-driven environment (SimuLearn) for generating realistic medical, legal, engineering, and software scenarios.",
     startBtn: "Generate New Scenario",
     resumeBtn: "📂 Resume Saved Session",
     setupTitle: "Mission Configuration",
@@ -80,6 +82,7 @@ const TRANSLATIONS = {
     domainEngineering: "Industrial Engineering",
     domainProgramming: "Coding & Debugging Specialization",
     domainCybersecurity: "Cybersecurity & Networks",
+    domainLegal: "Law & Judiciary",
     difficultyLabel: "Complexity Level",
     diffEasy: "Training (Easy)",
     diffMedium: "Field (Medium)",
@@ -92,6 +95,7 @@ const TRANSLATIONS = {
     workshop: "Field Site",
     serverRoom: "Dev Environment / Terminal",
     securityRoom: "Security Operations Center (SOC)",
+    courtRoom: "Courtroom / Legal Office",
     prevResult: "Previous Status Report",
     missionSuccess: "Mission Accomplished",
     missionFail: "Mission Failed",
@@ -102,8 +106,8 @@ const TRANSLATIONS = {
     actionsLabel: "Intervention Protocols",
     customActionBtn: "Creative Solution",
     customActionTitle: "Custom Action (Creativity Mode)",
-    customActionDesc: "Describe your intended action precisely. Physics/Medical consequences will be analyzed.",
-    customActionPlaceholder: "Ex: Perform an emergency cricothyrotomy to secure airway...",
+    customActionDesc: "Describe your intended action precisely. Legal/Physics consequences will be analyzed.",
+    customActionPlaceholder: "Ex: I will file a motion to suppress the evidence based on...",
     analyzeBtn: "Risk Analysis",
     analysisTitle: "Pre-Simulation Forecast",
     timeLabel: "Time Window",
@@ -114,7 +118,7 @@ const TRANSLATIONS = {
     confirmBtn: "Execute",
     dashboardTitle: "Vital Telemetry",
     goalLabel: "Primary Objective",
-    statusLabel: "System/Patient Integrity",
+    statusLabel: "System/Case Integrity",
     budgetLabel: "Resources",
     logTitle: "Event Log",
     noLogs: "Awaiting input...",
@@ -143,6 +147,7 @@ const App: React.FC = () => {
 
   // UI State
   const [isReviewing, setIsReviewing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Custom Action State
   const [showCustomModal, setShowCustomModal] = useState(false);
@@ -255,7 +260,9 @@ const App: React.FC = () => {
             "عذراً، انتهت صلاحية مفتاح API. يرجى تحديث بيانات الاعتماد." : 
             "API Key Expired. Please refresh your credentials.";
     }
-    alert(msg);
+    setErrorMsg(msg);
+    setLoading(false);
+    setLoadingText("");
   };
 
   const handleResumeGame = async () => {
@@ -309,6 +316,7 @@ const App: React.FC = () => {
     setLoading(true);
     setLoadingText(t.loadingSetup);
     setIsReviewing(false);
+    setErrorMsg(null);
     
     // Clear old save on new game start
     localStorage.removeItem(STORAGE_KEY);
@@ -344,6 +352,7 @@ const App: React.FC = () => {
     if (!gameState) return;
     setLoading(true);
     setLoadingText(t.loading);
+    setErrorMsg(null);
     // Stop speaking when action is taken
     if (isSpeaking) {
       window.speechSynthesis.cancel();
@@ -419,6 +428,7 @@ const App: React.FC = () => {
   const handleCustomActionAnalyze = async () => {
     if (!customActionText.trim() || !gameState) return;
     setIsAnalyzing(true);
+    setErrorMsg(null);
     try {
       const result = await GeminiService.evaluateCustomAction(customActionText, gameState, config.type, lang);
       setEstimation(result);
@@ -498,6 +508,29 @@ const App: React.FC = () => {
         <div className="max-w-2xl w-full bg-gray-900 border border-gray-800 rounded-3xl shadow-2xl overflow-hidden relative">
           
           {loading && <LoadingOverlay text={loadingText} />}
+          
+          {/* Error Modal */}
+          {errorMsg && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+               <div className="bg-gray-900 border border-red-500/50 rounded-2xl p-6 max-w-md w-full shadow-2xl relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-red-500"></div>
+                  <h3 className="text-red-400 font-bold text-lg mb-2 flex items-center gap-2">
+                     <span>⚠️</span> {lang === Language.AR ? 'تنبيه' : 'Error'}
+                  </h3>
+                  <p className="text-gray-300 mb-6 leading-relaxed">
+                     {errorMsg}
+                  </p>
+                  <div className="flex justify-end">
+                     <button 
+                       onClick={() => setErrorMsg(null)}
+                       className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold transition-colors"
+                     >
+                       {lang === Language.AR ? 'إغلاق' : 'Dismiss'}
+                     </button>
+                  </div>
+               </div>
+            </div>
+          )}
 
           {/* Header */}
           <div className="bg-gray-800 p-6 flex justify-between items-center border-b border-gray-700">
@@ -541,6 +574,13 @@ const App: React.FC = () => {
                 >
                   <div className={`text-2xl mb-2 ${config.type === ScenarioType.CYBERSECURITY ? 'scale-110' : 'grayscale opacity-50'} transition-all`}>🔐</div>
                   <div className={`font-bold text-xs ${config.type === ScenarioType.CYBERSECURITY ? 'text-white' : 'text-gray-400'}`}>{t.domainCybersecurity}</div>
+                </button>
+                <button 
+                  onClick={() => setConfig({ ...config, type: ScenarioType.LEGAL })} 
+                  className={`relative p-4 rounded-2xl border-2 text-left transition-all ${config.type === ScenarioType.LEGAL ? 'border-yellow-500 bg-yellow-900/10' : 'border-gray-800 bg-gray-800/50 hover:border-gray-600'}`}
+                >
+                  <div className={`text-2xl mb-2 ${config.type === ScenarioType.LEGAL ? 'scale-110' : 'grayscale opacity-50'} transition-all`}>⚖️</div>
+                  <div className={`font-bold text-xs ${config.type === ScenarioType.LEGAL ? 'text-white' : 'text-gray-400'}`}>{t.domainLegal}</div>
                 </button>
               </div>
             </div>
@@ -586,6 +626,29 @@ const App: React.FC = () => {
       
       {/* Loading Overlay */}
       {loading && <LoadingOverlay text={loadingText} />}
+
+      {/* Error Modal */}
+      {errorMsg && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+           <div className="bg-gray-900 border border-red-500/50 rounded-2xl p-6 max-w-md w-full shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-red-500"></div>
+              <h3 className="text-red-400 font-bold text-lg mb-2 flex items-center gap-2">
+                 <span>⚠️</span> {lang === Language.AR ? 'تنبيه' : 'Error'}
+              </h3>
+              <p className="text-gray-300 mb-6 leading-relaxed">
+                 {errorMsg}
+              </p>
+              <div className="flex justify-end">
+                 <button 
+                   onClick={() => setErrorMsg(null)}
+                   className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold transition-colors"
+                 >
+                   {lang === Language.AR ? 'إغلاق' : 'Dismiss'}
+                 </button>
+              </div>
+           </div>
+        </div>
+      )}
 
       {/* Game Over / Victory Overlay */}
       {(status === GameStatus.GAME_OVER || status === GameStatus.VICTORY) && (
@@ -644,7 +707,9 @@ const App: React.FC = () => {
                     <span className="font-bold tracking-wider text-sm uppercase hidden sm:inline">
                       {config.type === ScenarioType.MEDICAL ? t.medicalRoom : 
                        config.type === ScenarioType.ENGINEERING ? t.workshop : 
-                       config.type === ScenarioType.CYBERSECURITY ? t.securityRoom : t.serverRoom}
+                       config.type === ScenarioType.CYBERSECURITY ? t.securityRoom :
+                       config.type === ScenarioType.LEGAL ? t.courtRoom :
+                       t.serverRoom}
                     </span>
                 </div>
                 <div className="font-mono text-blue-400 font-bold">{t.round} {turnCount}</div>
