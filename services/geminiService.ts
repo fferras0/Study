@@ -50,13 +50,14 @@ export const startNewGame = async (
     You are an advanced simulation engine.
     Task: Create a unique, detailed scenario for ${type} in ${langName}.
     ${difficultyDesc}
-    ${pdfData ? "CRITICAL: Base the scenario SPECIFICALLY on the provided PDF document. Extract the core problem, context, and technical details from it." : ""}
+    ${pdfData ? `CRITICAL: Base the scenario SPECIFICALLY on the provided PDF document. Extract the core problem, context, and technical details from it. If the PDF is not in ${langName}, TRANSLATE the extracted concepts into ${langName}.` : ""}
     
     CRITICAL INSTRUCTIONS:
     1. Return ONLY valid JSON format.
     2. Do NOT write markdown code blocks. Just the raw JSON object.
     3. The "description" should be detailed and use Markdown for styling (bold, lists).
-    4. Ensure the Arabic text is professionally written, free of typos, and uses proper Markdown formatting.
+    4. Ensure the output language is STRICTLY ${langName}.
+    5. Ensure the Arabic text is professionally written, free of typos, and uses proper Markdown formatting.
     
     JSON Schema:
     {
@@ -145,8 +146,11 @@ export const processTurn = async (
     Player Action: "${actionLabel}"
     
     Task: Advance the simulation based on the action.
-    Return ONLY valid JSON.
-    Ensure the Arabic text is professionally written, free of typos, and uses proper Markdown formatting.
+    
+    CRITICAL INSTRUCTIONS:
+    1. Return ONLY valid JSON.
+    2. Output language must be STRICTLY ${langName}, even if the input context is in another language.
+    3. Ensure the Arabic text is professionally written, free of typos, and uses proper Markdown formatting.
     
     JSON Schema:
     {
@@ -245,12 +249,69 @@ export const evaluateCustomAction = async (
 };
 
 export const translateLogs = async (logs: LogEntry[], targetLang: Language): Promise<LogEntry[]> => {
-    // Return original logs to save tokens/speed, or implement if needed.
-    // For now, we return as is to ensure stability.
-    return logs; 
+    if (!logs || logs.length === 0) return [];
+    
+    const langName = targetLang === Language.AR ? 'Arabic' : 'English';
+    const logsToTranslate = logs.slice(-5); // Translate last 5 logs only to save tokens
+    const olderLogs = logs.slice(0, -5);
+
+    const systemPrompt = `
+      You are a translator. Translate the 'actionTaken' and 'feedback' fields of these log entries to ${langName}.
+      Keep 'turn' and 'timestamp' unchanged.
+      Return JSON array.
+      
+      Input:
+      ${JSON.stringify(logsToTranslate)}
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: MODEL_NAME,
+            contents: systemPrompt,
+            config: { responseMimeType: "application/json" }
+        });
+        const translated = extractAndParseJSON(response.text || "[]");
+        return Array.isArray(translated) ? [...olderLogs, ...translated] : logs;
+    } catch (e) {
+        console.error("Log translation failed", e);
+        return logs;
+    }
 };
 
 export const translateGameState = async (state: SimulationState, targetLang: Language): Promise<SimulationState> => {
-    // Return original state to save tokens/speed.
-    return state; 
+    const langName = targetLang === Language.AR ? 'Arabic' : 'English';
+    
+    const systemPrompt = `
+      You are a specialized simulation translator.
+      Task: Translate the text content of this SimulationState to ${langName}.
+      
+      Fields to translate:
+      1. description (maintain Markdown formatting)
+      2. goal
+      3. feedback
+      4. gameOverReason (if present)
+      5. options: For each option, translate 'label' and 'risk'.
+      
+      Do NOT translate: 
+      - imagePrompt, visualKeyword, health, budget, timeRemaining, isGameOver, isVictory, options.id, options.cost, options.timeCost.
+      
+      Input JSON:
+      ${JSON.stringify(state)}
+      
+      Return ONLY valid JSON.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: MODEL_NAME,
+            contents: systemPrompt,
+            config: { responseMimeType: "application/json" }
+        });
+        const data = extractAndParseJSON(response.text || "{}");
+        if (!data || !data.description) return state; // Fallback
+        return { ...state, ...data };
+    } catch (e) {
+        console.error("State translation failed", e);
+        return state;
+    }
 };
